@@ -31,9 +31,9 @@ class OdooClient:
         # Optional timeout
         self.timeout = int(os.getenv("ODOO_TIMEOUT_SECONDS", "25"))
 
-        # Customer filter
-        self.env_customer_ids = {
-            s.strip() for s in os.getenv("REPORT_CUSTOMER_IDS", "").split(",") if s.strip()
+        # Project filter
+        self.env_project_ids = {
+            s.strip() for s in os.getenv("REPORT_PROJECT_IDS", "").split(",") if s.strip()
         }
 
         # Paths
@@ -79,13 +79,13 @@ class OdooClient:
         self,
         start: date,
         end: date,
-        customer_ids: Optional[List[str]] = None,
+        project_ids: Optional[List[str]] = None,
     ) -> List[ReportRow]:
         """Return ReportRow list for [start..end] inclusive."""
-        customer_filter = set(customer_ids or []) or self.env_customer_ids
+        project_filter = set(project_ids or []) or self.env_project_ids
 
         if self.use_stub:
-            return self._fake_fetch_timesheet_rows(start, end, customer_filter)
+            return self._fake_fetch_timesheet_rows(start, end, project_filter)
 
 
         uid, models = self._rpc_authenticate()
@@ -127,8 +127,8 @@ class OdooClient:
         for ts in timesheets:
             rr = self._enrich_timesheet_row(ts, task_status_map)
 
-            # Apply customer filter
-            if customer_filter and (rr.customer_id not in customer_filter) and (rr.customer_name not in customer_filter):
+            # Apply project filter
+            if project_filter and str(rr.project_id) not in project_filter:
                 continue
 
             rows.append(rr)
@@ -204,7 +204,7 @@ class OdooClient:
         models = xc.ServerProxy(f"{self.base_url}/xmlrpc/2/object", transport=transport, allow_none=True)
         return uid, models
 
-    def _fake_fetch_timesheet_rows(self, start: date, end: date, customer_filter: set[str]) -> List[ReportRow]:
+    def _fake_fetch_timesheet_rows(self, start: date, end: date, project_filter: set[str]) -> List[ReportRow]:
         raw = self._load_json(self.samples_dir / "odoo_timesheets.json")
         rows: List[ReportRow] = []
         for e in raw:
@@ -226,7 +226,7 @@ class OdooClient:
                 project_id=str(e.get("project_id", "")),
                 project_name=str(e.get("project_name", "")),
             )
-            if customer_filter and (rr.customer_id not in customer_filter) and (rr.customer_name not in customer_filter):
+            if project_filter and str(rr.project_id) not in project_filter:
                 continue
             rows.append(rr)
         return rows

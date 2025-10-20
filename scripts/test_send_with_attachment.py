@@ -2,15 +2,17 @@
 """
 Send email with real generated PDF using existing customer data.
 - Uses EMAIL_FORWARD_ALL_TO for safe delivery during testing
-- Uses real customer data and existing PDF
+- Generates PDF from real timesheet data
+- Tests email formatting and delivery
 
 Usage:
-python scripts/test_send_with_attachment.py --subject "Real PDF Test"
+  python scripts/test_send_with_attachment.py
+  python scripts/test_send_with_attachment.py --project-id 15 --week-offset 14
 """
 import argparse
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
-import sys
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -27,32 +29,33 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description="Send email with real PDF attachment")
     parser.add_argument("--subject", default="Arbeitszeitreport Test", help="Email subject")
-    parser.add_argument("--customer-id", default="101", help="Customer ID to use (default: 101 = KIRATIK)")
-    parser.add_argument("--week-offset", type=int, default=0, help="Week offset in days (default: 0)")
+    parser.add_argument("--project-id", default="1", help="Project ID to use (default: 1)")
+    parser.add_argument("--week-offset", type=int, default=14, help="Week offset in days (default: 14)")
     args = parser.parse_args()
 
-    # Calculate current week
+    # Calculate reporting week
     week_start, week_end, week_label = calculate_reporting_week_with_offset(args.week_offset)
     print(f"📅 Using reporting period: {week_label}")
 
     # Fetch real timesheet data
-    print(f"📊 Fetching timesheet data for customer {args.customer_id}...")
+    print(f"📊 Fetching timesheet data for project {args.project_id}...")
     cli = OdooClient()
-    rows = cli.fetch_timesheet_rows(week_start, week_end, customer_ids=[args.customer_id])
+    rows = cli.fetch_timesheet_rows(week_start, week_end, project_ids=[args.project_id])
 
     if not rows:
-        print(f"❌ No timesheet data found for customer {args.customer_id}")
-        print("💡 Try different --customer-id or --week-offset")
+        print(f"❌ No timesheet data found for project {args.project_id}")
+        print("💡 Try different --project-id or --week-offset")
         return 1
 
-    # Group by customer
+    # Group by customer and select first one
     customer_packets = group_rows_by_customer_id(rows)
-    
-    if args.customer_id not in customer_packets:
-        print(f"❌ Customer {args.customer_id} not found in data")
+
+    if not customer_packets:
+        print("❌ No customers found in data")
         return 1
 
-    customer_packet = customer_packets[args.customer_id]
+    # Use first customer
+    customer_id, customer_packet = next(iter(customer_packets.items()))
     print(f"✓ Found {len(customer_packet['rows'])} entries for {customer_packet['customer_name']}")
 
     # Create output directory

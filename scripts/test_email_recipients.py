@@ -42,7 +42,7 @@ def main() -> int:
     cli = OdooClient()
     print(f"🔗 Odoo mode: {'STUB (samples)' if cli.use_stub else 'REAL (XML-RPC)'}")
     
-    rows = cli.fetch_timesheet_rows(week_start, week_end, customer_ids=[])
+    rows = cli.fetch_timesheet_rows(week_start, week_end, project_ids=[])
     
     if not rows:
         print("❌ No timesheet data found for this reporting period")

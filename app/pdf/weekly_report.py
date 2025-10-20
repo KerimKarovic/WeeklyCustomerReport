@@ -20,14 +20,13 @@ class WeeklyReportPDF(BasePDF):
     ADDRESS_WIDTH: float = 70  # Address block width (mm)
     HEADER_Y: float = 25  # Header line y position (mm)
     TITLE_Y: float = 70  # Title y position (mm)
-    DETAILS_PAGE_BREAK_Y: float = 180  # Y position for page break check (mm)
     PAGE_HEIGHT: float = 297  # A4 page height (mm)
     FOOTER_SPACE: float = 40  # Space reserved for footer (mm)
 
     # Table constants
     SUMMARY_COL_WIDTHS: List[float] = [154, 16]  # Summary table column widths
     DETAILS_HEADERS: List[str] = ["Datum", "Verantwortlicher", "Projekt", "Ticket", "Beschreibung", "Zeit"]
-    DETAILS_COL_WIDTHS: List[float] = [18, 22, 22, 42, 50, 16]  # Details table column widths
+    DETAILS_COL_WIDTHS: List[float] = [18, 28, 20, 35, 49, 16]  # Details table column widths
 
     # Text wrapping constants
     LINE_HEIGHT: float = 4  # Line height for text wrapping (mm)
@@ -41,7 +40,7 @@ class WeeklyReportPDF(BasePDF):
     COLOR_LOGO: tuple = (0, 120, 180)  # Logo color (blue)
 
 
-    def __init__(self, *, logo_path: Optional[Path] = None, font_family: str = "Calibri"):
+    def __init__(self, *, logo_path: Optional[Path] = None):
         super().__init__()
 
         # Standardize cell margin so header and body text align
@@ -59,10 +58,6 @@ class WeeklyReportPDF(BasePDF):
         # Override logo path if provided
         if logo_path:
             self.logo_path = logo_path
-
-        # Override font if different from base
-        if font_family != "Calibri":
-            self.font_name = self._try_set_font(font_family, size=self.FONT_MEDIUM)
 
         # Ensure header/footer are called automatically
         self.set_auto_page_break(auto=True, margin=30)  # Increase margin for footer
@@ -117,7 +112,7 @@ class WeeklyReportPDF(BasePDF):
         self.cell(0, 4, f"Seite: {self.page_no()} of {{nb}}", align="R")
         self.set_text_color(0, 0, 0)
 
-    def add_customer_address(self, customer_name: str, customer_address: Optional[Dict[str, str]] = None):
+    def add_customer_address(self, customer_name: str):
         """Add customer address block on the right side."""
         # Customer address block on the right
         self.set_xy(self.ADDRESS_X, 35)
@@ -154,40 +149,17 @@ class WeeklyReportPDF(BasePDF):
             self.cell(self.ADDRESS_WIDTH, 4, customer_name, align="L")
             address_start_y = 39
 
-        # Use real address if available
+        # Placeholder address
         self.set_font(self.font_name, size=8)
         current_y = address_start_y
-
-        if customer_address and any(customer_address.values()):
-            street = customer_address.get("street", "")
-            zip_code = customer_address.get("zip", "")
-            city = customer_address.get("city", "")
-            country = customer_address.get("country", "")
-
-            if street:
-                self.set_xy(self.ADDRESS_X, current_y)
-                self.cell(self.ADDRESS_WIDTH, 4, street, align="L")
-                current_y += 4
-
-            if zip_code or city:
-                zip_city = f"{zip_code} {city}".strip()
-                self.set_xy(self.ADDRESS_X, current_y)
-                self.cell(self.ADDRESS_WIDTH, 4, zip_city, align="L")
-                current_y += 4
-
-            if country:
-                self.set_xy(self.ADDRESS_X, current_y)
-                self.cell(self.ADDRESS_WIDTH, 4, country, align="L")
-        else:
-            # Fallback to placeholder
-            self.set_xy(self.ADDRESS_X, current_y)
-            self.cell(self.ADDRESS_WIDTH, 4, "Musterstraße 123", align="L")
-            current_y += 4
-            self.set_xy(self.ADDRESS_X, current_y)
-            self.cell(self.ADDRESS_WIDTH, 4, "12345 Musterstadt", align="L")
-            current_y += 4
-            self.set_xy(self.ADDRESS_X, current_y)
-            self.cell(self.ADDRESS_WIDTH, 4, "Deutschland", align="L")
+        self.set_xy(self.ADDRESS_X, current_y)
+        self.cell(self.ADDRESS_WIDTH, 4, "Musterstraße 123", align="L")
+        current_y += 4
+        self.set_xy(self.ADDRESS_X, current_y)
+        self.cell(self.ADDRESS_WIDTH, 4, "12345 Musterstadt", align="L")
+        current_y += 4
+        self.set_xy(self.ADDRESS_X, current_y)
+        self.cell(self.ADDRESS_WIDTH, 4, "Deutschland", align="L")
 
     def add_title_and_metadata(self, week_label: str, customer_packet: CustomerPacket):
         """Add title and metadata with correct values."""
@@ -195,7 +167,7 @@ class WeeklyReportPDF(BasePDF):
 
         # Main title
         self.set_xy(self.MARGIN_LEFT, self.TITLE_Y)
-        self.set_font(self.font_name, style="B", size=18)
+        self.set_font(self.font_name, style="B", size=14)
         self.cell(0, 10, "Arbeitszeitreport", align="L")
         self.ln(20)
 
@@ -285,13 +257,12 @@ class WeeklyReportPDF(BasePDF):
             lines.append(current_line)
         return lines
 
-    def _calculate_lines(self, text: str, width: float, limit: Optional[int] = None) -> int:
+    def _calculate_lines(self, text: str, width: float) -> int:
         """Calculate how many lines text will need when wrapped.
 
         Args:
             text: Text to calculate lines for
             width: Available width (mm)
-            limit: Optional maximum lines to return (for limited calculation)
 
         Returns:
             Number of lines needed
@@ -300,11 +271,11 @@ class WeeklyReportPDF(BasePDF):
             return 1
 
         text = str(text)
-        if limit and len(text) > self.MAX_TEXT_LENGTH:
+        if len(text) > self.MAX_TEXT_LENGTH:
             text = text[:self.MAX_TEXT_LENGTH - 3] + "..."
 
         lines = self._wrap_text(text, width)
-        return min(len(lines), limit) if limit else len(lines)
+        return len(lines)
 
     def _multi_line_cell(self, width: float, height: float, text: str, border: str, align: str = "L", pad_x: float = 1.0):
         """Draw a cell with wrapped text using hyphenation for long words."""
@@ -343,9 +314,6 @@ class WeeklyReportPDF(BasePDF):
                 if align == "R":
                     self.set_xy(x + width - 4.0, text_y)
                     self.cell(4.0, line_height, line, align="R")
-                elif align == "C":
-                    self.set_xy(x + pad_x, text_y)
-                    self.cell(max_text_width, line_height, line, align="C")
                 else:
                     # Compensate for FPDF's internal cell margin so left edge aligns with header text
                     cm = getattr(self, "c_margin", 0)  # fpdf2 internal cell margin (mm)
@@ -449,7 +417,7 @@ class WeeklyReportPDF(BasePDF):
     def add_details_section(self, customer_packet: CustomerPacket):
         """Add Details section - centered."""
         # Check if we need a page break before starting details
-        self._check_page_break(self.DETAILS_PAGE_BREAK_Y)
+        self._check_page_break(50)
 
         # Center the section title
         self.set_font(self.font_name, style="B", size=14)
@@ -573,6 +541,7 @@ class WeeklyReportPDF(BasePDF):
 
     def _draw_table_row(self, texts: list, col_widths: list, row_height: float):
         """Draw a complete table row."""
+        self._set_data_row_style()  # Ensure data row style is set (non-bold)
         self.set_x(self.MARGIN_LEFT)
 
         for i, text in enumerate(texts):
@@ -584,6 +553,8 @@ class WeeklyReportPDF(BasePDF):
 
     def _draw_table_row_with_overflow(self, texts: list, col_widths: list, available_height: float, headers: list):
         """Draw a table row that spans multiple pages."""
+        self._set_data_row_style()  # Ensure data row style is set (non-bold)
+
         # Calculate how much we can fit on current page
         lines_that_fit = max(1, int((available_height - 4) / self.LINE_HEIGHT))
         partial_height = lines_that_fit * self.LINE_HEIGHT + 2
@@ -654,7 +625,7 @@ class WeeklyReportPDF(BasePDF):
 
     def _set_data_row_style(self):
         """Set styling for table data rows."""
-        self.set_font(self.font_name, size=self.FONT_SMALL)
+        self.set_font(self.font_name, style="", size=self.FONT_SMALL)
         self.set_fill_color(255, 255, 255)
         self.set_draw_color(*self.COLOR_GRAY_LIGHT)
         self.set_line_width(self.GRID_W)
@@ -689,13 +660,16 @@ class WeeklyReportPDF(BasePDF):
         y0 = self.get_y()
         self.set_x(self.MARGIN_LEFT)
 
-        # Light-gray sides + top (draw empty cells first)
+        # Draw light-gray cells for all columns except the last
         self.set_draw_color(*self.COLOR_GRAY_LIGHT)
         FOOT_H = 8
-        self.cell(col_widths[0], FOOT_H, "", border="LRT", fill=True)
-        self.cell(col_widths[1], FOOT_H, "", border="LRT", fill=True)
+        for width in col_widths[:-1]:
+            self.cell(width, FOOT_H, "", border="LRT", fill=True)
 
-        # Overlay text with padding to match data rows
+        # Draw last column with light-gray
+        self.cell(col_widths[-1], FOOT_H, "", border="LRT", fill=True)
+
+        # Overlay text: label spans all columns except last, value in last column
         self.set_xy(self.MARGIN_LEFT - 0.5, y0 + 1)
         self.cell(sum(col_widths[:-1]) + 0.5, FOOT_H, label, align="L")
         self.set_xy(self.MARGIN_LEFT + sum(col_widths[:-1]), y0 + 1)

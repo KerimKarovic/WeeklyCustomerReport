@@ -38,24 +38,6 @@ class BasePDF(FPDF):
             print(f"⚠️  Calibri font loading failed: {e}. Using Arial fallback.")
             self.font_name = "Arial"
     
-    def _try_set_font(self, font_family: str, size: int = 10) -> str:
-        """Try to set a font family, falling back to Calibri if not available."""
-        try:
-            # Try to add and set the requested font
-            font_path = self.font_path / f"{font_family.lower()}.ttf"
-            if font_path.exists():
-                self.add_font(font_family, fname=str(font_path))
-                self.set_font(font_family, size=size)
-                return font_family
-            else:
-                # Font file not found, use default
-                self.set_font(self.font_name, size=size)
-                return self.font_name
-        except Exception:
-            # If anything fails, fall back to default font
-            self.set_font(self.font_name, size=size)
-            return self.font_name
-
     def _format_hours(self, hours: float) -> str:
         """Format hours for display."""
         return f"{hours:.1f}h"

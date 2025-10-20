@@ -5,7 +5,7 @@ import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 
 def _parse_bool(value: str | None, default: bool = False) -> bool:

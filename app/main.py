@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--mode", choices=["preview", "customer"], default="customer")
     parser.add_argument("--output-dir", default="output/reports")
     parser.add_argument("--week-offset", type=int, default=14)
-    parser.add_argument("--customers", help="Comma-separated customer IDs")
+    parser.add_argument("--projects", help="Comma-separated project IDs")
     args = parser.parse_args()
     
     # Initialize report log

@@ -89,18 +89,4 @@ def normalize_task_status_from_odoo(raw_status: Optional[str]) -> TaskStatus:
     # Default to in_progress
     return "in_progress"
 
-# Optional: a TypedDict if you prefer dict rows in some places
-class ReportRowDict(TypedDict):
-    worklog_id: int
-    date: str
-    task_id: int
-    task_name: str
-    task_url: str
-    user: str
-    hours: float
-    classification: str
-    task_status: str
-    customer_id: str
-    customer_name: str
-    project_id: str
-    project_name: str
+
