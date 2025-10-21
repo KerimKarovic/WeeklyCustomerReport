@@ -184,7 +184,7 @@ class WeeklyReportPDF(BasePDF):
 
         # Main title
         self.set_xy(self.MARGIN_LEFT, self.TITLE_Y)
-        self.set_font(self.font_name, style="B", size=14)
+        self.set_font(self.font_name, style="B", size=18)
         self.cell(0, 10, "Arbeitszeitreport", align="L")
         self.ln(20)
 
@@ -192,12 +192,10 @@ class WeeklyReportPDF(BasePDF):
         y_pos = self.get_y()
         current_date = datetime.now().strftime("%d.%m.%Y")
 
-        # Define metadata with proper values
+        # Define metadata with proper values (removed "Beschreibung" and "Quelle")
         metadata_items = [
             ("Rechnungsnummer:", f"AR-{datetime.now().strftime('%Y%m%d')}-{customer_packet['customer_id']}"),
-            ("Beschreibung:", "Arbeitszeitreport"),
             ("Rechn.Datum:", current_date),
-            ("Quelle:", "Timesheet"),
             ("Kunden-Nr.:", customer_packet["customer_id"]),
             ("Referenz:", week_label)
         ]
@@ -389,7 +387,7 @@ class WeeklyReportPDF(BasePDF):
         # Section title
         self.set_font(self.font_name, style="B", size=self.FONT_LARGE)
         self.set_x(self.MARGIN_LEFT)
-        self.cell(self.CONTENT_WIDTH, 8, "Übersicht", align="L")
+        self.cell(self.CONTENT_WIDTH, 10, "Übersicht", align="L")
         self.ln(10)
 
         # Calculate hours by classification
@@ -437,7 +435,7 @@ class WeeklyReportPDF(BasePDF):
         self._check_page_break(50)
 
         # Center the section title
-        self.set_font(self.font_name, style="B", size=14)
+        self.set_font(self.font_name, style="B", size=self.FONT_LARGE)
         self.set_x(self.MARGIN_LEFT)
         self.cell(self.CONTENT_WIDTH, 8, "Details", align="L")
         self.ln(10)
@@ -521,7 +519,7 @@ class WeeklyReportPDF(BasePDF):
                 row.date.strftime("%d.%m.%Y"),
                 row.user,
                 row.project_name,
-                row.task_name,
+                row.task_name,  # Changed from classification to task_name
                 row.description if row.description else "",
                 self._format_hours(row.hours)
             ]

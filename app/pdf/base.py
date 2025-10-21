@@ -17,7 +17,7 @@ class BasePDF(FPDF):
         # Font sizes
         self.FONT_LARGE = 14
         self.FONT_MEDIUM = 10
-        self.FONT_SMALL = 10
+        self.FONT_SMALL = 8
     
     def _setup_fonts(self):
         """Setup Calibri font configuration."""
