@@ -15,6 +15,7 @@ class CustomerPacket(TypedDict):
     project_ids: List[str]
     recipients: List[str]
     rows: List[ReportRow]
+    address: Optional[dict]
 
 
 def group_rows_by_customer_id(rows: List[ReportRow]) -> Dict[str, CustomerPacket]:
@@ -38,7 +39,8 @@ def group_rows_by_customer_id(rows: List[ReportRow]) -> Dict[str, CustomerPacket
                 customer_name=r.customer_name,
                 project_ids=[],
                 recipients=[],
-                rows=[]
+                rows=[],
+                address=None
             )
         groups[r.customer_id]["rows"].append(r)
         if r.project_id:

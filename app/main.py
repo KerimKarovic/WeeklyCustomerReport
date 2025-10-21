@@ -40,6 +40,15 @@ def main():
     customer_packets = group_rows_by_customer_id(rows)
     attach_recipient_emails_from_project_followers(customer_packets, cli)
     
+    # Fetch customer addresses
+    for customer_id, customer_packet in customer_packets.items():
+        try:
+            address = cli.fetch_customer_address(customer_id)
+            customer_packet["address"] = address
+        except Exception as e:
+            print(f"⚠️  Failed to fetch address for {customer_packet['customer_name']}: {e}")
+            customer_packet["address"] = None
+    
     # Process each customer
     for customer_id, customer_packet in customer_packets.items():
         customer_name = customer_packet["customer_name"]

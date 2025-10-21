@@ -112,7 +112,7 @@ class WeeklyReportPDF(BasePDF):
         self.cell(0, 4, f"Seite: {self.page_no()} of {{nb}}", align="R")
         self.set_text_color(0, 0, 0)
 
-    def add_customer_address(self, customer_name: str):
+    def add_customer_address(self, customer_name: str, address: Optional[dict] = None):
         """Add customer address block on the right side."""
         # Customer address block on the right
         self.set_xy(self.ADDRESS_X, 35)
@@ -149,17 +149,34 @@ class WeeklyReportPDF(BasePDF):
             self.cell(self.ADDRESS_WIDTH, 4, customer_name, align="L")
             address_start_y = 39
 
-        # Placeholder address
+        # Real address or fallback
+        if address and any(address.values()):
+            street = address.get("street", "")
+            zip_city = f"{address.get('zip', '')} {address.get('city', '')}".strip()
+            country = address.get("country", "Deutschland")
+        else:
+            # Fallback to placeholder
+            street = "Musterstraße 123"
+            zip_city = "12345 Musterstadt"
+            country = "Deutschland"
+
+        # Address lines
         self.set_font(self.font_name, size=8)
         current_y = address_start_y
-        self.set_xy(self.ADDRESS_X, current_y)
-        self.cell(self.ADDRESS_WIDTH, 4, "Musterstraße 123", align="L")
-        current_y += 4
-        self.set_xy(self.ADDRESS_X, current_y)
-        self.cell(self.ADDRESS_WIDTH, 4, "12345 Musterstadt", align="L")
-        current_y += 4
-        self.set_xy(self.ADDRESS_X, current_y)
-        self.cell(self.ADDRESS_WIDTH, 4, "Deutschland", align="L")
+        
+        if street:
+            self.set_xy(self.ADDRESS_X, current_y)
+            self.cell(self.ADDRESS_WIDTH, 4, street, align="L")
+            current_y += 4
+        
+        if zip_city:
+            self.set_xy(self.ADDRESS_X, current_y)
+            self.cell(self.ADDRESS_WIDTH, 4, zip_city, align="L")
+            current_y += 4
+        
+        if country:
+            self.set_xy(self.ADDRESS_X, current_y)
+            self.cell(self.ADDRESS_WIDTH, 4, country, align="L")
 
     def add_title_and_metadata(self, week_label: str, customer_packet: CustomerPacket):
         """Add title and metadata with correct values."""

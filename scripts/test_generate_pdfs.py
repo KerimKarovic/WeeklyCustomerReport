@@ -59,6 +59,16 @@ def main() -> int:
     customer_packets = group_rows_by_customer_id(rows)
     print(f"✓ {len(customer_packets)} customers have data in reporting period")
 
+    # Fetch customer addresses
+    print(f"📍 Fetching customer addresses...")
+    for customer_id, customer_packet in customer_packets.items():
+        try:
+            address = cli.fetch_customer_address(customer_id)
+            customer_packet["address"] = address
+        except Exception as e:
+            print(f"⚠️  Failed to fetch address for {customer_packet['customer_name']}: {e}")
+            customer_packet["address"] = None
+
     # Take first N customers
     selected_customers = list(customer_packets.items())[:args.count]
     print(f"\n🎯 Generating PDFs for {len(selected_customers)} customers:")

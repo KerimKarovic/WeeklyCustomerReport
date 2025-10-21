@@ -325,3 +325,46 @@ class OdooClient:
         # Default to Support for unclear cases
         return "Support"
 
+    def fetch_customer_address(self, partner_id: str | int) -> dict:
+        """Fetch customer address, following parent company if needed."""
+        if self.use_stub:
+            # Return sample address for stub mode
+            return {
+                "street": "Musterstraße 123",
+                "zip": "12345", 
+                "city": "Musterstadt",
+                "country": "Deutschland"
+            }
+        
+        uid, models = self._rpc_authenticate()
+        
+        try:
+            # Fetch partner with address and company info
+            partner = models.execute_kw(self.db, uid, self.password, 'res.partner', 'read', 
+                [int(partner_id)], 
+                {'fields': ['name', 'is_company', 'parent_id', 'street', 'zip', 'city', 'country_id']}
+            )[0]
+            
+            # If this is an individual, get parent company address
+            if not partner.get('is_company', False) and partner.get('parent_id'):
+                parent_id = partner['parent_id'][0]
+                parent = models.execute_kw(self.db, uid, self.password, 'res.partner', 'read',
+                    [parent_id],
+                    {'fields': ['street', 'zip', 'city', 'country_id']}
+                )[0]
+                partner.update(parent)  # Use parent's address
+            
+            # Extract address components
+            country_name = partner.get('country_id', [False, 'Deutschland'])[1] if partner.get('country_id') else 'Deutschland'
+            
+            return {
+                "street": partner.get('street', '') or '',
+                "zip": partner.get('zip', '') or '',
+                "city": partner.get('city', '') or '',
+                "country": country_name
+            }
+            
+        except Exception as exc:
+            print(f"[WARN] Failed to fetch address for partner {partner_id}: {exc}")
+            return {"street": "", "zip": "", "city": "", "country": "Deutschland"}
+

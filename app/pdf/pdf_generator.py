@@ -13,7 +13,9 @@ def generate_customer_pdf(
     pdf = WeeklyReportPDF()
     pdf.add_page()
     
-    pdf.add_customer_address(customer_packet["customer_name"])
+    # Pass address data if available
+    address = customer_packet.get("address")
+    pdf.add_customer_address(customer_packet["customer_name"], address)
     pdf.add_title_and_metadata(week_label, customer_packet)
     pdf.add_summary_section(customer_packet)
     pdf.add_details_section(customer_packet)
