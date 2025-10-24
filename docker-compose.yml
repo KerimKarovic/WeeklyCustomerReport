@@ -1,0 +1,23 @@
+services:
+  timesheet-app:
+    build:
+      context: .
+      target: production
+    container_name: timesheet-reports
+    environment:
+      - ODOO_BASE_URL=${ODOO_BASE_URL}
+      - ODOO_DB=${ODOO_DB}
+      - ODOO_LOGIN=${ODOO_LOGIN}
+      - ODOO_PASSWORD=${ODOO_PASSWORD}
+      - REPORT_PROJECT_IDS=${REPORT_PROJECT_IDS}
+      - EMAIL_SMTP_HOST=${EMAIL_SMTP_HOST}
+      - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT}
+      - EMAIL_SMTP_USER=${EMAIL_SMTP_USER}
+      - EMAIL_SMTP_PASSWORD=${EMAIL_SMTP_PASSWORD}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS}
+      - EMAIL_FORWARD_ALL_TO=${EMAIL_FORWARD_ALL_TO:-}
+    volumes:
+      - ./output:/app/output
+      - ./samples:/app/samples:ro
+    restart: unless-stopped
+    command: ["python", "app/main.py"]

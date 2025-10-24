@@ -1,0 +1,34 @@
+services:
+  timesheet-app:
+    build:
+      context: .
+      target: development
+    container_name: timesheet-reports-dev
+    environment:
+      - ODOO_BASE_URL=${ODOO_BASE_URL:-}
+      - ODOO_DB=${ODOO_DB:-}
+      - ODOO_LOGIN=${ODOO_LOGIN:-}
+      - ODOO_PASSWORD=${ODOO_PASSWORD:-}
+      - REPORT_PROJECT_IDS=${REPORT_PROJECT_IDS:-}
+      - EMAIL_SMTP_HOST=${EMAIL_SMTP_HOST:-}
+      - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT:-587}
+      - EMAIL_SMTP_USER=${EMAIL_SMTP_USER:-}
+      - EMAIL_SMTP_PASSWORD=${EMAIL_SMTP_PASSWORD:-}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-}
+      - EMAIL_FORWARD_ALL_TO=${EMAIL_FORWARD_ALL_TO:-}
+    volumes:
+      - .:/app
+      - ./output:/app/output
+    ports:
+      - "8000:8000"
+    develop:
+      watch:
+        - action: sync
+          path: ./app
+          target: /app/app
+        - action: sync
+          path: ./scripts
+          target: /app/scripts
+        - action: rebuild
+          path: requirements.txt
+    command: ["python", "app/main.py", "--mode", "preview"]
