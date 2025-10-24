@@ -7,6 +7,11 @@ from app.services.resolve import CustomerPacket
 class WeeklyReportPDF(BasePDF):
     """PDF generator for weekly timesheet reports matching the KIRATIK template."""
 
+    # Font size constants
+    FONT_SIZE_LARGE = 14   # For section headers like "Übersicht", "Details"
+    FONT_SIZE_MEDIUM = 12  # For table headers and footer rows
+    FONT_SIZE_SMALL = 10   # For table data and metadata
+
     # Stroke widths to match the first table design
     GRID_W: float = 0.25  # light grid width (mm)
     RULE_W: float = 0.45  # strong rule width (mm)
@@ -24,9 +29,9 @@ class WeeklyReportPDF(BasePDF):
     FOOTER_SPACE: float = 40  # Space reserved for footer (mm)
 
     # Table constants
-    SUMMARY_COL_WIDTHS: List[float] = [154, 16]  # Summary table column widths
+    SUMMARY_COL_WIDTHS: List[float] = [156, 16]  # Summary table column widths
     DETAILS_HEADERS: List[str] = ["Datum", "Verantwortlicher", "Projekt", "Ticket", "Beschreibung", "Zeit"]
-    DETAILS_COL_WIDTHS: List[float] = [18, 28, 20, 35, 49, 16]  # Details table column widths
+    DETAILS_COL_WIDTHS: List[float] = [18, 34, 20, 35, 49, 16]  # Details table column widths
 
     # Text wrapping constants
     LINE_HEIGHT: float = 4  # Line height for text wrapping (mm)
@@ -116,7 +121,7 @@ class WeeklyReportPDF(BasePDF):
         """Add customer address block on the right side."""
         # Customer address block on the right
         self.set_xy(self.ADDRESS_X, 35)
-        self.set_font(self.font_name, style="B", size=9)
+        self.set_font(self.font_name, style="B", size=10)
 
         # Wrap customer name if it's too long
         if self.get_string_width(customer_name) > self.ADDRESS_WIDTH:
@@ -161,7 +166,7 @@ class WeeklyReportPDF(BasePDF):
             country = "Deutschland"
 
         # Address lines
-        self.set_font(self.font_name, size=8)
+        self.set_font(self.font_name, size=10)
         current_y = address_start_y
         
         if street:
@@ -184,7 +189,7 @@ class WeeklyReportPDF(BasePDF):
 
         # Main title
         self.set_xy(self.MARGIN_LEFT, self.TITLE_Y)
-        self.set_font(self.font_name, style="B", size=18)
+        self.set_font(self.font_name, style="B", size=18)  # Keep title size as is
         self.cell(0, 10, "Arbeitszeitreport", align="L")
         self.ln(20)
 
@@ -192,7 +197,7 @@ class WeeklyReportPDF(BasePDF):
         y_pos = self.get_y()
         current_date = datetime.now().strftime("%d.%m.%Y")
 
-        # Define metadata with proper values (removed "Beschreibung" and "Quelle")
+        # Define metadata with proper values - all in font size 10
         metadata_items = [
             ("Rechnungsnummer:", f"AR-{datetime.now().strftime('%Y%m%d')}-{customer_packet['customer_id']}"),
             ("Rechn.Datum:", current_date),
@@ -200,11 +205,11 @@ class WeeklyReportPDF(BasePDF):
             ("Referenz:", week_label)
         ]
 
-        # Calculate actual text widths
-        self.set_font(self.font_name, style="B", size=8)
+        # Calculate actual text widths using font size 10
+        self.set_font(self.font_name, style="B", size=self.FONT_SIZE_SMALL)
         label_widths = [self.get_string_width(label) for label, _ in metadata_items]
 
-        self.set_font(self.font_name, size=8)
+        self.set_font(self.font_name, size=self.FONT_SIZE_SMALL)
         value_widths = [self.get_string_width(value) for _, value in metadata_items]
 
         # Use maximum width needed for each field (label or value)
@@ -215,18 +220,18 @@ class WeeklyReportPDF(BasePDF):
         remaining_space = self.CONTENT_WIDTH - total_field_width
         gap_width = remaining_space / (len(metadata_items) - 1) if len(metadata_items) > 1 else 0
 
-        # Labels row
+        # Labels row - font size 10
         self.set_xy(self.MARGIN_LEFT, y_pos)
-        self.set_font(self.font_name, style="B", size=8)
+        self.set_font(self.font_name, style="B", size=self.FONT_SIZE_SMALL)
         x_pos = self.MARGIN_LEFT
         for i, (label, _) in enumerate(metadata_items):
             self.set_xy(x_pos, y_pos)
             self.cell(field_widths[i], 4, label, align="L")
             x_pos += field_widths[i] + gap_width
 
-        # Values row
+        # Values row - font size 10
         self.set_xy(self.MARGIN_LEFT, y_pos + 4)
-        self.set_font(self.font_name, size=8)
+        self.set_font(self.font_name, size=self.FONT_SIZE_SMALL)
         x_pos = self.MARGIN_LEFT
         for i, (_, value) in enumerate(metadata_items):
             self.set_xy(x_pos, y_pos + 4)
@@ -385,7 +390,7 @@ class WeeklyReportPDF(BasePDF):
     def add_summary_section(self, customer_packet: CustomerPacket):
         """Add Übersicht (summary) section with proper wrapping."""
         # Section title
-        self.set_font(self.font_name, style="B", size=self.FONT_LARGE)
+        self.set_font(self.font_name, style="B", size=self.FONT_SIZE_LARGE)
         self.set_x(self.MARGIN_LEFT)
         self.cell(self.CONTENT_WIDTH, 10, "Übersicht", align="L")
         self.ln(10)
@@ -398,7 +403,7 @@ class WeeklyReportPDF(BasePDF):
 
         col_widths = self.SUMMARY_COL_WIDTHS
 
-        # Header with black top border - match details table style
+        # Header with black top border - font size 12
         self._set_header_style()
         self.set_x(self.MARGIN_LEFT)
         self.cell(col_widths[0], 8, "Aufgabe", border="T", fill=True, align="L")
@@ -412,8 +417,8 @@ class WeeklyReportPDF(BasePDF):
         self.cell(sum(col_widths), 8, "", border="LRB")
         self.ln(0)
 
-        # Data rows with light gray borders
-        self.set_font(self.font_name, size=self.FONT_MEDIUM)
+        # Data rows with light gray borders - font size 10
+        self.set_font(self.font_name, size=self.FONT_SIZE_SMALL)
         self.set_fill_color(255, 255, 255)
 
         for classification, hours in hours_by_type.items():
@@ -435,7 +440,7 @@ class WeeklyReportPDF(BasePDF):
         self._check_page_break(50)
 
         # Center the section title
-        self.set_font(self.font_name, style="B", size=self.FONT_LARGE)
+        self.set_font(self.font_name, style="B", size=self.FONT_SIZE_LARGE)
         self.set_x(self.MARGIN_LEFT)
         self.cell(self.CONTENT_WIDTH, 8, "Details", align="L")
         self.ln(10)
@@ -633,14 +638,14 @@ class WeeklyReportPDF(BasePDF):
 
     def _set_header_style(self):
         """Set styling for table headers."""
-        self.set_font(self.font_name, style="B", size=self.FONT_MEDIUM)
+        self.set_font(self.font_name, style="B", size=self.FONT_SIZE_SMALL)  # Font size 10, Bold
         self.set_fill_color(*self.COLOR_GRAY_HEADER)
         self.set_draw_color(*self.COLOR_BLACK)
         self.set_line_width(self.RULE_W)
 
     def _set_data_row_style(self):
         """Set styling for table data rows."""
-        self.set_font(self.font_name, style="", size=self.FONT_SMALL)
+        self.set_font(self.font_name, style="", size=self.FONT_SIZE_SMALL)  # Font size 10
         self.set_fill_color(255, 255, 255)
         self.set_draw_color(*self.COLOR_GRAY_LIGHT)
         self.set_line_width(self.GRID_W)
@@ -662,14 +667,8 @@ class WeeklyReportPDF(BasePDF):
         return False
 
     def _draw_footer_row(self, col_widths: list, label: str, value: str):
-        """Draw a footer row with gray fill and borders.
-
-        Args:
-            col_widths: List of column widths
-            label: Text for the label column (left-aligned)
-            value: Text for the value column (right-aligned)
-        """
-        self.set_font(self.font_name, style="B", size=self.FONT_MEDIUM)
+        """Draw a footer row with gray fill and borders."""
+        self.set_font(self.font_name, style="B", size=self.FONT_SIZE_SMALL)  # Font size 10, Bold
         self.set_fill_color(*self.COLOR_GRAY_HEADER)
 
         y0 = self.get_y()
@@ -685,10 +684,12 @@ class WeeklyReportPDF(BasePDF):
         self.cell(col_widths[-1], FOOT_H, "", border="LRT", fill=True)
 
         # Overlay text: label spans all columns except last, value in last column
-        self.set_xy(self.MARGIN_LEFT - 0.5, y0 + 1)
-        self.cell(sum(col_widths[:-1]) + 0.5, FOOT_H, label, align="L")
-        self.set_xy(self.MARGIN_LEFT + sum(col_widths[:-1]), y0 + 1)
-        self.cell(col_widths[-1], FOOT_H, value, align="R")
+        # Center text vertically by adjusting y position
+        text_y_offset = (FOOT_H - 4) / 2  # Center 4mm text height in 8mm cell
+        self.set_xy(self.MARGIN_LEFT - 0.5, y0 + text_y_offset)
+        self.cell(sum(col_widths[:-1]) + 0.5, 4, label, align="L")
+        self.set_xy(self.MARGIN_LEFT + sum(col_widths[:-1]), y0 + text_y_offset)
+        self.cell(col_widths[-1], 4, value, align="R")
 
         # Black bottom border across full table width
         self.set_draw_color(*self.COLOR_BLACK)
